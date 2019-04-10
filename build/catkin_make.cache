@@ -1,0 +1,2 @@
+mesa_marker:navegacion:pared_marker:piso_salon:silla_marker
+-DCATKIN_DEVEL_PREFIX=/home/berna/Documentos/RoboticaMovil/salon_ws/devel -DCMAKE_INSTALL_PREFIX=/home/berna/Documentos/RoboticaMovil/salon_ws/install -G Unix Makefiles

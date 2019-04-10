@@ -1,0 +1,8 @@
+prefix=/home/berna/Documentos/RoboticaMovil/salon_ws/devel
+
+Name: silla_marker
+Description: Description of silla_marker
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/berna/Documentos/RoboticaMovil/salon_ws/devel/lib 
+Requires: 

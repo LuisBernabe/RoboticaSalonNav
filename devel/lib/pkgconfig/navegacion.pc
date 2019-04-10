@@ -1,0 +1,8 @@
+prefix=/home/berna/Documentos/RoboticaMovil/salon_ws/devel
+
+Name: navegacion
+Description: Description of navegacion
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/berna/Documentos/RoboticaMovil/salon_ws/devel/lib 
+Requires: 

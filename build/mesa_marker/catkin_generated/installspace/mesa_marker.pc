@@ -1,0 +1,8 @@
+prefix=/home/berna/Documentos/RoboticaMovil/salon_ws/install
+
+Name: mesa_marker
+Description: Description of mesa_marker
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/berna/Documentos/RoboticaMovil/salon_ws/install/lib 
+Requires: 

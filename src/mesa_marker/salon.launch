@@ -1,0 +1,225 @@
+<launch>
+  <!--- pared -->
+    <!--- *********************************************** -->
+  <node pkg="pared_marker" name="pared_0" type="pared.py" >
+    <param name="num_pared" value="0"/>
+    <param name="paredEnX" value="True"/>
+    <param name="x" value="12.5"/>
+    <param name="y" value="0"/>
+    <param name="z" value="2.0"/>
+    <param name="largo" value="30"/>
+  </node>
+
+  <node pkg="pared_marker" name="pared_1" type="pared.py" >
+    <param name="num_pared" value="1"/>
+    <param name="paredEnX" value="True"/>
+    <param name="x" value="-12.5"/>
+    <param name="y" value="0"/>
+    <param name="z" value="2.0"/>
+    <param name="largo" value="30"/>
+  </node>
+
+  <node pkg="pared_marker" name="pared_2" type="pared.py" >
+    <param name="num_pared" value="2"/>
+    <param name="paredEnX" value="False"/>
+    <param name="x" value="0"/>
+    <param name="y" value="15.5"/>
+    <param name="z" value="2.0"/>
+    <param name="largo" value="24"/>
+  </node>
+
+
+    <node pkg="pared_marker" name="pared_3" type="pared.py" >
+      <param name="num_pared" value="3"/>
+      <param name="paredEnX" value="False"/>
+      <param name="x" value="0"/>
+      <param name="y" value="-15.5"/>
+      <param name="z" value="2.0"/>
+    <param name="largo" value="24"/>
+    </node>
+
+  <!--- mesas -->
+    <!--- *********************************************** -->
+  <node  pkg="mesa_marker" name="mesa_0" type="mesa.py">
+    <param name="num_mesa" value="0"/>
+    <param name="x" value="-7.5"/>
+    <param name="y" value="10.0"/>
+    <param name="z" value="1.0"/>
+  </node>
+
+  <node  pkg="mesa_marker" name="mesa_1" type="mesa.py">
+    <param name="num_mesa" value="1"/>
+    <param name="x" value="-7.5"/>
+    <param name="y" value="4.0"/>
+    <param name="z" value="1.0"/>
+  </node>
+
+
+  <node  pkg="mesa_marker" name="mesa_2" type="mesa.py">
+    <param name="num_mesa" value="2"/>
+    <param name="x" value="-7.5"/>
+    <param name="y" value="-2.0"/>
+    <param name="z" value="1.0"/>
+  </node>
+
+  <node  pkg="mesa_marker" name="mesa_3" type="mesa.py">
+    <param name="num_mesa" value="3"/>
+    <param name="x" value="-7.5"/>
+    <param name="y" value="-8.0"/>
+    <param name="z" value="1.0"/>
+  </node>
+
+  <node  pkg="mesa_marker" name="mesa_4" type="mesa.py">
+    <param name="num_mesa" value="4"/>
+    <param name="x" value="7.5"/>
+    <param name="y" value="4.0"/>
+    <param name="z" value="1.0"/>
+  </node>
+
+  <node  pkg="mesa_marker" name="mesa_5" type="mesa.py">
+    <param name="num_mesa" value="5"/>
+    <param name="x" value="7.5"/>
+    <param name="y" value="-2.0"/>
+    <param name="z" value="1.0"/>
+  </node>
+
+  <node  pkg="mesa_marker" name="mesa_6" type="mesa.py">
+    <param name="num_mesa" value="6"/>
+    <param name="x" value="7.5"/>
+    <param name="y" value="-8.0"/>
+    <param name="z" value="1.0"/>
+  </node>
+
+  <!--- sillas de una mesa -->
+    <!--- *********************************************** -->
+  <node pkg="silla_marker" name="silla_0" type="silla.py">
+    <param name="num_silla" value="0"/>
+    <param name="x" value="-10.0"/>
+    <param name="y" value="8.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_1" type="silla.py">
+    <param name="num_silla" value="1"/>
+    <param name="x" value="-7.0"/>
+    <param name="y" value="8.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_2" type="silla.py">
+    <param name="num_silla" value="2"/>
+    <param name="x" value="-4.0"/>
+    <param name="y" value="8.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+    <!--- *********************************************** -->
+  <node pkg="silla_marker" name="silla_3" type="silla.py">
+    <param name="num_silla" value="3"/>
+    <param name="x" value="-10.0"/>
+    <param name="y" value="2.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_4" type="silla.py">
+    <param name="num_silla" value="4"/>
+    <param name="x" value="-7.0"/>
+    <param name="y" value="2.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_5" type="silla.py">
+    <param name="num_silla" value="5"/>
+    <param name="x" value="-4.0"/>
+    <param name="y" value="2.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <!--- *********************************************** -->
+  <node pkg="silla_marker" name="silla_6" type="silla.py">
+    <param name="num_silla" value="6"/>
+    <param name="x" value="-10.0"/>
+    <param name="y" value="-3.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_7" type="silla.py">
+    <param name="num_silla" value="7"/>
+    <param name="x" value="-7.0"/>
+    <param name="y" value="-3.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_8" type="silla.py">
+    <param name="num_silla" value="8"/>
+    <param name="x" value="-4.0"/>
+    <param name="y" value="-3.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <!--- *********************************************** -->
+  <node pkg="silla_marker" name="silla_9" type="silla.py">
+    <param name="num_silla" value="9"/>
+    <param name="x" value="-10.0"/>
+    <param name="y" value="-9.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_10" type="silla.py">
+    <param name="num_silla" value="10"/>
+    <param name="x" value="-7.0"/>
+    <param name="y" value="-9.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_11" type="silla.py">
+    <param name="num_silla" value="11"/>
+    <param name="x" value="-4.0"/>
+    <param name="y" value="-9.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+  <!--- *********************************************** -->
+  <node pkg="silla_marker" name="silla_12" type="silla.py">
+    <param name="num_silla" value="12"/>
+    <param name="x" value="9.0"/>
+    <param name="y" value="2.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_13" type="silla.py">
+    <param name="num_silla" value="13"/>
+    <param name="x" value="6.0"/>
+    <param name="y" value="2.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <!--- *********************************************** -->
+  <node pkg="silla_marker" name="silla_14" type="silla.py">
+    <param name="num_silla" value="14"/>
+    <param name="x" value="9.0"/>
+    <param name="y" value="-3.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_15" type="silla.py">
+    <param name="num_silla" value="15"/>
+    <param name="x" value="6.0"/>
+    <param name="y" value="-3.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <!--- *********************************************** -->
+  <node pkg="silla_marker" name="silla_16" type="silla.py">
+    <param name="num_silla" value="16"/>
+    <param name="x" value="9.0"/>
+    <param name="y" value="-9.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+  <node pkg="silla_marker" name="silla_17" type="silla.py">
+    <param name="num_silla" value="17"/>
+    <param name="x" value="6.0"/>
+    <param name="y" value="-9.5"/>
+    <param name="z" value="0.5"/>
+  </node>
+
+</launch>
