@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
 #Author Berna
 import rospy
 from nav_msgs.msg import OccupancyGrid
@@ -100,36 +100,72 @@ class navegacion:
         #marker_pub.publish(make_arrow_points_marker(scale,Point(0,0,0), Point(3,0,0), 3))
 
     def navega(self):
-        cons=0.3
+        cons = 1
         x_grid=int(math.floor(self.x*3.33))
         y_grid=int(math.floor(self.y*3.33))
 
         punto_r=[x_grid,y_grid]#[8,1]
         pto_goal=self.goal#[22,9]
 
-        res=self.fuerzas_repTotal(punto_r)
-        f_goal=self.fuerzas_repGoal(punto_r,pto_goal)
-        vec_resultante=res+f_goal
+        res = self.fuerzas_repTotal(punto_r)  # Valores de entorno real
+        f_goal = self.fuerzas_repGoal(punto_r, pto_goal)  # Valores de entorno real
+        vec_resultante=cons*(res+f_goal)
         vel=self.magnitud(vec_resultante)
-        giro=self.direccion_vector(vec_resultante) #<------direccion
-
-        print "x:", self.x,"\ty:",self.y
+        giro=self.direccion_vector(vec_resultante) #<------direccion en el plano
+        inclinacion_robot=self.giro_robot(giro) #<---- En el robot
+        #giro =  (giro - inclinacion_robot)*0.33
+        print "x:", self.x, "\ty:", self.y
         print "x_grid:", x_grid,"\ty_grid:",y_grid
         print "f_rep_coordenadas:\t",res
-        print "f_goal:",self.to_real(self.goal)
+        print "f_goal:", f_goal# self.to_real(self.goal)
         print "vec_resultante:\t", vec_resultante
-        print "Velocidad:\t", vel#vec_resultante
+        print "Velocidad:\t", vel, "m/s"  # vec_resultante
         print "Giro:\t\t", giro
-        #self.make_arrow(vel)
-        scale = Vector3(vel,0.1,0.2)
-        self.make_arrow_points_marker(scale,Point(0,0,0.5), Point(3,0,0), 3)
-        self.move(vel,giro)
+        print "Giro Robot:\t\t", np.radians(inclinacion_robot)
+
+        # scale = Vector3(vel,0.1,0.2)
+        # self.make_arrow_points_marker(scale,Point(0,0,0.5), Point(3,0,0), 3)
 
         print "***************************************************"
+        #if()
+        if self.goal[0] != x_grid and self.goal[1] != y_grid:
+            self.move(vel, inclinacion_robot)
 
-        self.orientation=self.redondea_orientacion() #Actualiza la orientacion
+        # self.orientation=self.redondea_orientacion() #Actualiza la orientacion
         rospy.sleep(1)
         #print self.orientation
+
+
+
+    def move(self,velocidad, angulo):
+        cons=0.33
+        distancia = 1*cons
+        rapidez = velocidad *cons
+        vel_msg = Twist()
+        relative_angle = np.radians(angulo) # Angulo en radianes
+
+        #Setting the current time for distance calculus
+        t0 = rospy.Time.now().to_sec()
+        current_distance = 0
+
+        while(current_distance < distancia ):# or self.x < 0.0 ):
+        #Publish the velocity
+            vel_msg.linear.x = rapidez
+            vel_msg.linear.y = 0
+            vel_msg.linear.z = 0
+
+            # Angular velocity in the z-axis.
+            vel_msg.angular.x = 0
+            vel_msg.angular.y = 0
+            vel_msg.angular.z = relative_angle
+
+            self.velocity_publisher.publish(vel_msg)
+            #Takes actual time to velocity calculus
+            t1=rospy.Time.now().to_sec()
+            #Calculates distancePoseStamped
+            current_distance= rapidez*(t1-t0) #d=v*t
+            #elf.rate.sleep()
+        rospy.sleep(1)
 
     def to_real(self,pto):#De un punto en el grid lo convierte a las medidas fisicas originales
 
@@ -137,44 +173,43 @@ class navegacion:
         p= p*0.3#np.true_divide(p,0.3)
         return p
 
-    def move(self,velocidad, giro):
-        distancia=0.3
-        rapidez=velocidad#*0.3
-        vel_msg = Twist()
-
-        #Setting the current time for distance calculus
-        t0 = rospy.Time.now().to_sec()
-        current_distance = 0
-
-        while(current_distance < distancia):# or self.x < 0.0 ):
-        #Publish the velocity
-            vel_msg.linear.x = rapidez#abs()
-            vel_msg.angular.z = giro
-
-            self.velocity_publisher.publish(vel_msg)
-            #Takes actual time to velocity calculus
-            t1=rospy.Time.now().to_sec()
-            #Calculates distancePoseStamped
-            current_distance= rapidez*(t1-t0) #d=v*t
-        rospy.sleep(1)
-
+    """
+    Definimos el giro del robot, ya sea en sentido horario(-) o antiHorario(+)
+    return giro del robot en grados
+    """
+    def giro_robot(self,giro):
+        pos_actual=self.toDegreesPos(self.yaw)
+        if pos_actual >giro:
+            # antiHorario
+            anti_horario=(360-pos_actual)+giro
+            sentido_horario=pos_actual-giro
+            if anti_horario < sentido_horario:
+                return anti_horario
+            else:
+                return -sentido_horario
+        else:
+            return giro -pos_actual
 
     def fuerzas_repGoal(self,punto_r,pto_goal):
+        cons=2
         d=self.distancia(punto_r,pto_goal)
-        f=self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(pto_goal),d)
+        f=cons * self.fuerza_atraccion(self.to_real(punto_r),self.to_real(pto_goal),d)
         return f
 
     def magnitud(self,vec_resultante):
+        # print "def magnitud()"
         a=vec_resultante**2
-        a=vec_resultante[0][0] + vec_resultante[0][1]
-        a=abs(a)
+        # print "\t", a
+        a=a[0][0] + a[0][1]
+        # print "\t", a
+        #a=abs(a)
         return math.sqrt(a)
 
     """
     calcularmos Distancia
     """
     def distancia(self,punto_r,punto_i):
-        #punto_r=self.to_real(punto_r)
+        # punto_r=self.to_real(punto_r)
         punto_i=self.to_real(punto_i)
         n=((punto_i[0][0]-self.x)**2)+((punto_i[0][1]-self.y)**2)
         return math.sqrt(n)
@@ -182,12 +217,32 @@ class navegacion:
     #def magnitud(self,distancia):
     #    return float(1/distancia)
 
-
+    """
+    Calcula fuerza repulsiva, al final lo convierte en positivo ya que
+    la repele
+    """
     def fuerza_repulsiva(self,punto_r,punto_i,distancia):
         a=punto_r-punto_i
 
         f=np.true_divide(a, distancia**2)
+        f=np.absolute(f)
         return f#.tolist()
+
+    """
+    Calcula fuerza repulsiva, al final lo convierte en negativo
+    ya que se atraen
+    """
+    def fuerza_atraccion(self,punto_r,punto_i,distancia):
+        a=punto_r-punto_i
+
+        f=np.true_divide(a, distancia**2)
+        if f[0][0] > 0:
+            f[0][0] = -f[0][0]
+        elif f[0][1] > 0:
+            f[0][1] = -f[0][1]
+
+        return f#.tolist()
+
 
 
     def tangente(self,vec_resultante):#Nos dara el angulo para la direccion
@@ -195,61 +250,62 @@ class navegacion:
 
     def direccion_vector(self,vec_resultante):
         d=vec_resultante[0][1]/vec_resultante[0][0]
-        dir=np.arctan(d)
+        dir=np.arctan(d) #En radianes
+        dir=self.toDegreesPos(dir)
         #print "Direccion, en grados: \t",dir
         return dir
 
     """
     Buscamos colisiones
     """
-    #Colisiones en Todos los puntos cardinales, respecto al mapa
-    #return vector con la fuerza repulsiva
+    # Colisiones en Todos los puntos cardinales(sensores), respecto al mapa
+    # return vector con la fuerza repulsiva
     def fuerzas_repTotal(self,punto_r):
-
-        punto_r_ar=np.array([punto_r])
+        cons=1
+        # punto_r_ar= np.array([punto_r])
         res=np.array([[0.0,0.0]])
 
         punto_i=self.colision_N(punto_r)
-        #print "colision_N",punto_i
-        d=self.distancia(punto_r,punto_i)
-        #print "Distancia_N",d
-        f= self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
-        #print "fuerza_repulsiva", f
+        # print "colision_N",punto_i
+        d = self.distancia(punto_r, punto_i)
+        # print "Distancia_N",d
+        f = cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
+        # print "fuerza_repulsiva", f
         res+=f
 
         punto_i=self.colision_NE(punto_r)
         d=self.distancia(punto_r,punto_i)
-        f= self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
+        f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_E(punto_r)
         d=self.distancia(punto_r,punto_i)
-        f= self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
+        f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_S(punto_r)
         d=self.distancia(punto_r,punto_i)
-        f= self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
+        f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_SE(punto_r)
         d=self.distancia(punto_r,punto_i)
-        f= self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
+        f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_SO(punto_r)
         d=self.distancia(punto_r,punto_i)
-        f= self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
+        f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_O(punto_r)
         d=self.distancia(punto_r,punto_i)
-        f= self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
+        f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_NO(punto_r)
         d=self.distancia(punto_r,punto_i)
-        f= self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
+        f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         return res
@@ -260,7 +316,7 @@ class navegacion:
         y_temp=punto_r[1]+1
         while x < self.width and y_temp < self.height:
             if self.mapa[y_temp][x] == 100:
-                return ([x,y_temp])
+                return ([x,y_temp-1])
             y_temp+=1
         return [x,self.height-1]
 
@@ -270,7 +326,7 @@ class navegacion:
 
         while x < self.width and y_temp >=0:
             if self.mapa[y_temp][x]==100:
-                return [x,y_temp]
+                return [x,y_temp+1]
             y_temp-=1
         return [x,0]
 
@@ -279,7 +335,7 @@ class navegacion:
         y=punto_r[1]
         while x_temp < self.width and y < self.height:
             if self.mapa[y][x_temp] == 100:
-                return ([x_temp,y])
+                return ([x_temp-1,y])
             x_temp+=1
         return [self.width-1,y]
 
@@ -288,7 +344,7 @@ class navegacion:
         y=punto_r[1]
         while x_temp > 0 and y < self.height:
             if self.mapa[y][x_temp] == 100:
-                return ([x_temp,y])
+                return ([x_temp+1,y])
             x_temp-=1
         return [0,y]
 
@@ -297,17 +353,17 @@ class navegacion:
         y_temp=punto_r[1]
         while x_temp < self.width and y_temp < self.height:
             if self.mapa[y_temp][x_temp] == 100:
-                return [x_temp,y_temp]
+                return [x_temp-1, y_temp-1]
             x_temp+=1
             y_temp+=1
-        return [self.width-1,self.height-1]
+        return [self.width-1, self.height-1]
 
     def colision_SE(self,punto_r):
         x_temp=punto_r[0]
         y_temp=punto_r[1]
         while x_temp < self.width and y_temp >= 0:
             if self.mapa[y_temp][x_temp] == 100:
-                return [x_temp,y_temp]
+                return [x_temp-1,y_temp+1]
             x_temp+=1
             y_temp-=1
         return [self.width-1,0]
@@ -317,7 +373,7 @@ class navegacion:
         y_temp=punto_r[1]
         while x_temp >= 0 and y_temp >= 0:
             if self.mapa[y_temp][x_temp] == 100:
-                return [x_temp,y_temp]
+                return [x_temp+1,y_temp+1]
             x_temp-=1
             y_temp-=1
         return [0,0]
@@ -327,11 +383,23 @@ class navegacion:
         y_temp=punto_r[1]
         while x_temp >= 0 and y_temp < self.height:
             if self.mapa[y_temp][x_temp] == 100:
-                return [x_temp,y_temp]
+                return [x_temp+1,y_temp-1]
             x_temp-=1
             y_temp+=1
         return [0,self.height-1]
 
+
+    """
+    Convertimos radianes en grados positivos.
+    El valor se nos da en radianes (de 0-3.14 y de -3.14 -0) i.e de (-pi, pi)
+    el valor dado se pasa a grados y en caso de de que sea negativos se convierten
+    a grados positivos
+    """
+    def toDegreesPos(self,yaw):
+        grados=np.degrees(yaw)
+        if grados < 0:
+            grados=grados +360
+        return grados
 
     """
     buscamos una correcta orientacion para utilizar el arreglo
