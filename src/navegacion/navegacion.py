@@ -26,12 +26,14 @@ class navegacion:
         self.x=start_x
         self.y=start_y
         self.punto_r=[self.x,self.y]
-        self.goal=[22,9]
+        self.goal=[16,9]
         self.width=width #X
         self.height=height #Y
         self.orientacion=init_orientation
         self.coordenadas=coordenadas
         self.coordenadas=self.genera_coord()
+        self.vel_lineal=0
+        self.vel_angular = 0          # RADIANES
         #print "coordenadas",self.coordenadas
 
     def get_odom(self,msg):
@@ -107,78 +109,82 @@ class navegacion:
         punto_r=[x_grid,y_grid]#[8,1]
         pto_goal=self.goal#[22,9]
 
-        res = self.fuerzas_repTotal(punto_r)  # Valores de entorno real
+        f_obs = self.fuerzas_repTotal(punto_r)  # Valores de entorno real
         f_goal = self.fuerzas_repGoal(punto_r, pto_goal)  # Valores de entorno real
-        vec_resultante=cons*(res+f_goal)
-        vel=self.magnitud(vec_resultante)
-        giro=self.direccion_vector(vec_resultante) #<------direccion en el plano
-        inclinacion_robot=self.giro_robot(giro) #<---- En el robot
+        vec_resultante = cons * (f_obs + f_goal)
+        vel_lineal = self.producto_punto(vec_resultante, self.orientacion_kobuki() )       # Velocidad lineal
+        ortogonal=self.v_ortogonal(self.orientacion_kobuki())
+        vel_angular=self.producto_punto(vec_resultante,ortogonal)
+
+        self.vel_lineal += vel_lineal
+        self.vel_angular += vel_angular
+        #self.vel_angular+=ortogonal
         #giro =  (giro - inclinacion_robot)*0.33
         print "x:", self.x, "\ty:", self.y
         print "x_grid:", x_grid,"\ty_grid:",y_grid
-        print "f_rep_coordenadas:\t",res
+        print "f_obstaculos:\t",f_obs
         print "f_goal:", f_goal# self.to_real(self.goal)
         print "vec_resultante:\t", vec_resultante
-        print "Velocidad:\t", vel, "m/s"  # vec_resultante
-        print "Giro:\t\t", giro
-        print "Giro Robot:\t\t", np.radians(inclinacion_robot)
-
-        # scale = Vector3(vel,0.1,0.2)
-        # self.make_arrow_points_marker(scale,Point(0,0,0.5), Point(3,0,0), 3)
+        print "orientacion_kobuki\t", self.orientacion_kobuki()
+        print "ortogonal_kobuki:\t", ortogonal
+        print "Velocidad lineal:\t", vel_lineal  # vec_resultante
+        print "Velocidad angular:\t", vel_angular
 
         print "***************************************************"
-        #if()
-        if self.goal[0] != x_grid and self.goal[1] != y_grid:
-            self.move(vel, inclinacion_robot)
+
+        # if self.goal[0] != x_grid and self.goal[1] != y_grid:
+        self.move()
 
         # self.orientation=self.redondea_orientacion() #Actualiza la orientacion
-        rospy.sleep(1)
-        #print self.orientation
+        #rospy.sleep(0.1)
+        # print self.orientation
 
 
 
-    def move(self,velocidad, angulo):
-        cons=0.33
-        distancia = 1*cons
-        rapidez = velocidad *cons
+    def move(self):
+        cons = 0.3
         vel_msg = Twist()
-        relative_angle = np.radians(angulo) # Angulo en radianes
+        # Publish the velocity
+        self.vel_lineal *= cons
+        self.vel_angular *= cons
 
-        #Setting the current time for distance calculus
-        t0 = rospy.Time.now().to_sec()
-        current_distance = 0
+        if self.vel_lineal > 1.5:
+            self.vel_lineal =1.5
+        elif self.vel_lineal < -1.5:
+            self.vel_lineal=-1.5
 
-        while(current_distance < distancia ):# or self.x < 0.0 ):
-        #Publish the velocity
-            vel_msg.linear.x = rapidez
-            vel_msg.linear.y = 0
-            vel_msg.linear.z = 0
+        if self.vel_angular > np.radians(360):
+            self.vel_angular = np.radians(360)
+        elif self.vel_angular < -np.radians(360):
+            self.vel_angular = -np.radians(360)
 
-            # Angular velocity in the z-axis.
-            vel_msg.angular.x = 0
-            vel_msg.angular.y = 0
-            vel_msg.angular.z = relative_angle
+        # Angular velocity in the z-axis.
+        vel_msg.linear.x = self.vel_lineal       # velocidad
+        vel_msg.linear.y = 0
+        vel_msg.linear.z = 0
 
-            self.velocity_publisher.publish(vel_msg)
-            #Takes actual time to velocity calculus
-            t1=rospy.Time.now().to_sec()
-            #Calculates distancePoseStamped
-            current_distance= rapidez*(t1-t0) #d=v*t
-            #elf.rate.sleep()
-        rospy.sleep(1)
+        vel_msg.angular.x = 0
+        vel_msg.angular.y = 0
+        vel_msg.angular.z = - self.vel_angular
 
-    def to_real(self,pto):#De un punto en el grid lo convierte a las medidas fisicas originales
+        self.velocity_publisher.publish(vel_msg)
+        print "velocidad lineal real:\t", self.vel_lineal
+        print "Velocidad angular real:\t", self.vel_angular, "\n\n"
 
-        p=np.array([pto]);
-        p= p*0.3#np.true_divide(p,0.3)
+    # De un punto en el grid lo convierte a las medidas fisicas originales
+
+    def to_real(self, pto):
+        p = np.array([pto]);
+        p = p*0.3       # np.true_divide(p,0.3)
         return p
+
 
     """
     Definimos el giro del robot, ya sea en sentido horario(-) o antiHorario(+)
     return giro del robot en grados
     """
-    def giro_robot(self,giro):
-        pos_actual=self.toDegreesPos(self.yaw)
+    def giro_robot(self, giro):
+        pos_actual = self.toDegreesPos(self.yaw)
         if pos_actual >giro:
             # antiHorario
             anti_horario=(360-pos_actual)+giro
@@ -190,8 +196,35 @@ class navegacion:
         else:
             return giro -pos_actual
 
+    def producto_punto(self, f, k):
+        #Obtenemos producto punto
+        res=f[0][0]*k[0] + f[0][1]*k[1]
+        return res
+
+    """
+    Obtenemos el vector ortogonal (perpendicular) al que nos da la orientacion
+    de Kobuki, esto para proyectarlo y poder obtener la velocidad
+    angular
+    """
+    def v_ortogonal(self,v):
+        return np.array([v[1], -v[0]])
+
+
+    """
+    return coordenadas(x,y)
+    """
+    def orientacion_kobuki(self):
+        y=np.sin(self.yaw)
+        x=np.cos(self.yaw)
+        return np.array([x,y])
+
+
+    """
+    Calculamos fuerzas para las coordenadas meta
+    """
+
     def fuerzas_repGoal(self,punto_r,pto_goal):
-        cons=2
+        cons=1.3
         d=self.distancia(punto_r,pto_goal)
         f=cons * self.fuerza_atraccion(self.to_real(punto_r),self.to_real(pto_goal),d)
         return f
@@ -222,10 +255,10 @@ class navegacion:
     la repele
     """
     def fuerza_repulsiva(self,punto_r,punto_i,distancia):
-        a=punto_r-punto_i
+        a=punto_r- punto_i
 
-        f=np.true_divide(a, distancia**2)
-        f=np.absolute(f)
+        f=np.true_divide(a, distancia**3)
+        #f=np.absolute(f)
         return f#.tolist()
 
     """
@@ -233,13 +266,14 @@ class navegacion:
     ya que se atraen
     """
     def fuerza_atraccion(self,punto_r,punto_i,distancia):
-        a=punto_r-punto_i
-
-        f=np.true_divide(a, distancia**2)
-        if f[0][0] > 0:
-            f[0][0] = -f[0][0]
-        elif f[0][1] > 0:
-            f[0][1] = -f[0][1]
+        cons=1
+        a=punto_i-punto_r
+        f=a * cons
+        #f=np.true_divide(a, distancia)
+        #if f[0][0] > 0:
+        #    f[0][0] = -f[0][0]
+        #elif f[0][1] > 0:
+        #    f[0][1] = -f[0][1]
 
         return f#.tolist()
 
@@ -261,21 +295,21 @@ class navegacion:
     # Colisiones en Todos los puntos cardinales(sensores), respecto al mapa
     # return vector con la fuerza repulsiva
     def fuerzas_repTotal(self,punto_r):
-        cons=1
+        cons=1.3
         # punto_r_ar= np.array([punto_r])
-        res=np.array([[0.0,0.0]])
-
-        punto_i=self.colision_N(punto_r)
         # print "colision_N",punto_i
-        d = self.distancia(punto_r, punto_i)
         # print "Distancia_N",d
-        f = cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         # print "fuerza_repulsiva", f
+
+        res=np.array([[0.0,0.0]])
+        punto_i=self.colision_N(punto_r)
+        d = self.distancia(punto_r, punto_i)
+        f = cons * self.fuerza_repulsiva(self.to_real(punto_r), self.to_real(punto_i), d)
         res+=f
 
         punto_i=self.colision_NE(punto_r)
         d=self.distancia(punto_r,punto_i)
-        f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
+        f = cons * self.fuerza_repulsiva(self.to_real(punto_r), self.to_real(punto_i), d)
         res+=f
 
         punto_i=self.colision_E(punto_r)
@@ -401,23 +435,8 @@ class navegacion:
             grados=grados +360
         return grados
 
-    """
-    buscamos una correcta orientacion para utilizar el arreglo
-    """
 
-    def redondea_orientacion(self):
-        current_yaw=self.yaw
-        for c in self.coordenadas:
-            cons=0.5
-            val=c[1] #Numero
-            izq=val+cons
-            der=val-cons
-            #print "Coor:",c[0],"\tizq: ",izq,"\tcurrent:",int(current_yaw),"\tder:",der
-            if izq >= 3.0 and current_yaw <= -2.7 :
-                current_yaw*= -1
-            if izq >= current_yaw and current_yaw >= der:
-                return c[0]
-        #Si devuelve None es necesario rotar hacia cualquier lado un poco para que encuentre la coordenadas
+            #Si devuelve None es necesario rotar hacia cualquier lado un poco para que encuentre la coordenadas
 #            rospy.sleep(0.05)
             #cons-=0.2
 
