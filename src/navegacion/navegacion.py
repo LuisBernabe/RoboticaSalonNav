@@ -4,7 +4,7 @@
 import rospy
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist, Point,Vector3
+from geometry_msgs.msg import Twist, Point, Vector3,PoseStamped
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from time import time
 import visualization_msgs
@@ -18,6 +18,7 @@ class navegacion:
 
     def __init__(self,start_x,start_y,width,height,coordenadas,init_orientation):
         rospy.Subscriber("/odom",Odometry,self.get_odom)
+        rospy.Subscriber("/move_base_simple/goal", PoseStamped, self._goal)
         rospy.Subscriber("/piso_publicador",OccupancyGrid,self.grid) #Se suscribe a los datos del OccupancyGrid
         self.arrow_publisher=rospy.Publisher("/marker_arrow",Marker,queue_size=1)
         self.velocity_publisher = rospy.Publisher('/mobile_base/commands/velocity', Twist, queue_size=10)
@@ -26,7 +27,7 @@ class navegacion:
         self.x=start_x
         self.y=start_y
         self.punto_r=[self.x,self.y]
-        self.goal=[16,9]
+        self.goal=np.array([[4.0, 2.97]])
         self.width=width #X
         self.height=height #Y
         self.orientacion=init_orientation
@@ -45,6 +46,9 @@ class navegacion:
         orientation_list=[orientation_q.x,orientation_q.y,orientation_q.z,orientation_q.w]
         (self.roll,self.pitch,self.yaw)=euler_from_quaternion(orientation_list)
 
+    def _goal(self,msg):
+        self.goal[0][0] = msg.pose.pose.position.x
+        self.goal[0][1] = msg.pose.pose.position.y
     """
     Guardamos el Mapa
     """
@@ -121,6 +125,7 @@ class navegacion:
         #self.vel_angular+=ortogonal
         #giro =  (giro - inclinacion_robot)*0.33
         print "x:", self.x, "\ty:", self.y
+        print "Goal:", self.goal
         print "x_grid:", x_grid,"\ty_grid:",y_grid
         print "f_obstaculos:\t",f_obs
         print "f_goal:", f_goal# self.to_real(self.goal)
@@ -136,22 +141,23 @@ class navegacion:
         self.move()
 
         # self.orientation=self.redondea_orientacion() #Actualiza la orientacion
-        #rospy.sleep(0.1)
+        rospy.sleep(0.01)
         # print self.orientation
 
 
 
     def move(self):
-        cons = 0.3
+        cons_a=0.2
+        cons_l = 0.2
         vel_msg = Twist()
         # Publish the velocity
-        self.vel_lineal *= cons
-        self.vel_angular *= cons
+        self.vel_lineal *= cons_l
+        self.vel_angular *= cons_a
 
-        if self.vel_lineal > 1.5:
-            self.vel_lineal =1.5
-        elif self.vel_lineal < -1.5:
-            self.vel_lineal=-1.5
+        if self.vel_lineal > 1:
+            self.vel_lineal =1
+        elif self.vel_lineal < -1:
+            self.vel_lineal=-1
 
         if self.vel_angular > np.radians(360):
             self.vel_angular = np.radians(360)
@@ -175,7 +181,7 @@ class navegacion:
 
     def to_real(self, pto):
         p = np.array([pto]);
-        p = p*0.3       # np.true_divide(p,0.3)
+        p = p*0.333       # np.true_divide(p,0.3)
         return p
 
 
@@ -224,8 +230,11 @@ class navegacion:
     """
 
     def fuerzas_repGoal(self,punto_r,pto_goal):
-        cons=1.3
-        d=self.distancia(punto_r,pto_goal)
+        cons=1.5
+        #d=self.distancia(punto_r,pto_goal)
+        n = ((self.goal[0][0]-self.x)**2)+((self.goal[0][1]-self.y)**2)       #Distancia
+        d = math.sqrt(n)
+
         f=cons * self.fuerza_atraccion(self.to_real(punto_r),self.to_real(pto_goal),d)
         return f
 
@@ -243,7 +252,7 @@ class navegacion:
     """
     def distancia(self,punto_r,punto_i):
         # punto_r=self.to_real(punto_r)
-        punto_i=self.to_real(punto_i)
+        #punto_i=self.to_real(punto_i)
         n=((punto_i[0][0]-self.x)**2)+((punto_i[0][1]-self.y)**2)
         return math.sqrt(n)
 
@@ -255,9 +264,9 @@ class navegacion:
     la repele
     """
     def fuerza_repulsiva(self,punto_r,punto_i,distancia):
-        a=punto_r- punto_i
+        a=np.array([[self.x,self.y]])- punto_i
 
-        f=np.true_divide(a, distancia**3)
+        f=np.true_divide(a, distancia**3)       #distancia**3
         #f=np.absolute(f)
         return f#.tolist()
 
@@ -265,9 +274,10 @@ class navegacion:
     Calcula fuerza repulsiva, al final lo convierte en negativo
     ya que se atraen
     """
-    def fuerza_atraccion(self,punto_r,punto_i,distancia):
+    def fuerza_atraccion(self,punto_r,punto_goal,distancia):
         cons=1
-        a=punto_i-punto_r
+        #a=punto_goal-punto_r
+        a=self.goal-np.array([[self.x,self.y]])
         f=a * cons
         #f=np.true_divide(a, distancia)
         #if f[0][0] > 0:
@@ -303,42 +313,42 @@ class navegacion:
 
         res=np.array([[0.0,0.0]])
         punto_i=self.colision_N(punto_r)
-        d = self.distancia(punto_r, punto_i)
+        d = self.distancia(punto_r, self.to_real(punto_i))
         f = cons * self.fuerza_repulsiva(self.to_real(punto_r), self.to_real(punto_i), d)
         res+=f
 
         punto_i=self.colision_NE(punto_r)
-        d=self.distancia(punto_r,punto_i)
+        d = self.distancia(punto_r, self.to_real(punto_i))
         f = cons * self.fuerza_repulsiva(self.to_real(punto_r), self.to_real(punto_i), d)
         res+=f
 
         punto_i=self.colision_E(punto_r)
-        d=self.distancia(punto_r,punto_i)
+        d = self.distancia(punto_r, self.to_real(punto_i))
         f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_S(punto_r)
-        d=self.distancia(punto_r,punto_i)
+        d = self.distancia(punto_r, self.to_real(punto_i))
         f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_SE(punto_r)
-        d=self.distancia(punto_r,punto_i)
+        d = self.distancia(punto_r, self.to_real(punto_i))
         f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_SO(punto_r)
-        d=self.distancia(punto_r,punto_i)
+        d = self.distancia(punto_r, self.to_real(punto_i))
         f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_O(punto_r)
-        d=self.distancia(punto_r,punto_i)
+        d = self.distancia(punto_r, self.to_real(punto_i))
         f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
         punto_i=self.colision_NO(punto_r)
-        d=self.distancia(punto_r,punto_i)
+        d = self.distancia(punto_r, self.to_real(punto_i))
         f= cons * self.fuerza_repulsiva(self.to_real(punto_r),self.to_real(punto_i),d)
         res+=f
 
@@ -362,7 +372,7 @@ class navegacion:
             if self.mapa[y_temp][x]==100:
                 return [x,y_temp+1]
             y_temp-=1
-        return [x,0]
+        return [x,1]
 
     def colision_E(self,punto_r):#(x,y)
         x_temp=punto_r[0]+1
