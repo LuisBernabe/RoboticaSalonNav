@@ -15,12 +15,14 @@ import math
 
 
 class navegacion:
-
-    def __init__(self,start_x,start_y,width,height,coordenadas,init_orientation):
+    """
+        Constructor
+    """    
+    def __init__(self,start_x,start_y,width,height):
         rospy.Subscriber("/odom",Odometry,self.get_odom)
         rospy.Subscriber("/move_base_simple/goal", PoseStamped, self._goal)
         rospy.Subscriber("/piso_publicador",OccupancyGrid,self.grid) #Se suscribe a los datos del OccupancyGrid
-        self.arrow_publisher=rospy.Publisher("/marker_arrow",Marker,queue_size=1)
+
         self.velocity_publisher = rospy.Publisher('/mobile_base/commands/velocity', Twist, queue_size=10)
         self.mapa=None #guarda un np.array
         self.once=False
@@ -30,25 +32,29 @@ class navegacion:
         self.goal=np.array([[4.0, 2.97]])
         self.width=width #X
         self.height=height #Y
-        self.orientacion=init_orientation
-        self.coordenadas=coordenadas
-        self.coordenadas=self.genera_coord()
         self.vel_lineal=0
         self.vel_angular = 0          # RADIANES
-        #print "coordenadas",self.coordenadas
+        
 
+    """
+        descompone los valores del topico poseStamped y los asignamos a una variable global. 
+    """
     def get_odom(self,msg):
         self.pose=msg
         #COORDENADAS EN EL ENTORNO REAL
-        self.x=msg.pose.pose.position.x #* 3.33
-        self.y=msg.pose.pose.position.y #* 3.33
+        self.x=msg.pose.pose.position.x 
+        self.y=msg.pose.pose.position.y 
         orientation_q= msg.pose.pose.orientation
         orientation_list=[orientation_q.x,orientation_q.y,orientation_q.z,orientation_q.w]
         (self.roll,self.pitch,self.yaw)=euler_from_quaternion(orientation_list)
 
+    """
+        Definimos el valor del objetivo
+    """
     def _goal(self,msg):
         self.goal[0][0] = msg.pose.pose.position.x
         self.goal[0][1] = msg.pose.pose.position.y
+    
     """
     Guardamos el Mapa
     """
@@ -57,54 +63,46 @@ class navegacion:
         mapa=msg.data
         mapa=np.array(mapa)
         mapa=mapa.reshape(self.height,self.width)
-    #    self.set_mapa(mapa)
         self.mapa=mapa
-    #def set_mapa(self,mapa):
-    #    self.mapa=mapa
         self.navega()
 
-    def genera_coord(self):
-        nw_coor=["NO","SO","SE","NE"]
-        res=[]
-        #print "C: ",self.coordenadas
-        for idx,c in enumerate(self.coordenadas):
-            coord=c[1]+0.75
+    """
+    Dibuja un vector: 
 
-            if coord > 3.0 :
-                coord=3.0-coord
-                coord=-3.0-coord
-            #else:
+    """
+    def markerVector(self,id,vector,position,name,pub):
+        marker = Marker ()
+        marker.header.frame_id = "/odom"
+        marker.header.stamp = rospy.Time.now ()
+        marker.ns = name;
+        marker.id = id;
+        marker.type = visualization_msgs.msg.Marker.ARROW
+        marker.action = visualization_msgs.msg.Marker.ADD
+        marker.scale.x=0.1
+        marker.scale.y=0.3
+        marker.scale.z=0.1
+        marker.color.a= 1.0
+        marker.color.r = 0.33*float(id)
+        marker.color.g = 0.33*float(id)
+        marker.color.b = 0.33*float(id)
+        (start,end)=(Point(),Point())
 
-            res+=[c]+[[nw_coor[idx],coord]]
-            #rospy.sleep(0.2)
-        self.coordenadas=res
-        return res
-
-    def make_arrow_points_marker(self,scale, tail, tip, idnum):
-    # make a visualization marker array for the occupancy grid
-        m = Marker()
-        m.action = Marker.ADD
-        m.header.frame_id = '/base_link'
-        m.header.stamp = rospy.Time.now()
-        m.ns = 'points_arrows'
-        m.id = idnum
-        m.type = Marker.ARROW
-        m.pose.orientation.y = 0
-        m.pose.orientation.w = 1
-        m.scale = scale
-        m.color.r = 0.2
-        m.color.g = 0.5
-        m.color.b = 1.0
-        m.color.a = 0.7
-        m.pose.position=tail
-        #m.points =  tail#, tip ]
-        self.arrow_publisher.publish(m)
-        #print "Flecha ---->"
-        #return m
-
-        #scale = Vector3(2,4,0.69)
-        #marker_pub.publish(make_arrow_points_marker(scale,Point(0,0,0), Point(3,0,0), 3))
-
+        start.x = self.x  # position[0]
+        start.y = self.y   # position[1]
+        start.z =0.5       # position[2]
+        end.x=start.x+vector[0][0]
+        end.y=start.y+vector[0][1]
+      
+        marker.points.append(start)
+        marker.points.append(end)
+        
+        pub.publish(marker)
+        
+    """
+        En este metodo nos encargamos de unir todos nuestros calculos
+        respecto a los campos potenciales para que logre avanzar y no estrellarse
+        con obstaculos
+    """
     def navega(self):
         cons = 1
         x_grid=int(math.floor(self.x*3.33))
@@ -122,37 +120,42 @@ class navegacion:
 
         self.vel_lineal += vel_lineal
         self.vel_angular += vel_angular
-        #self.vel_angular+=ortogonal
-        #giro =  (giro - inclinacion_robot)*0.33
+       
         print "x:", self.x, "\ty:", self.y
         print "Goal:", self.goal
         print "x_grid:", x_grid,"\ty_grid:",y_grid
         print "f_obstaculos:\t",f_obs
-        print "f_goal:", f_goal# self.to_real(self.goal)
+        print "f_goal:", f_goal
         print "vec_resultante:\t", vec_resultante
         print "orientacion_kobuki\t", self.orientacion_kobuki()
         print "ortogonal_kobuki:\t", ortogonal
-        print "Velocidad lineal:\t", vel_lineal  # vec_resultante
+        print "Velocidad lineal:\t", vel_lineal 
         print "Velocidad angular:\t", vel_angular
 
         print "***************************************************"
-
+        vec_res_pub = rospy.Publisher ("vector_resultante", visualization_msgs.msg.Marker)
+        self.markerVector(1,vec_resultante, np.zeros(2),"vector_resultante",vec_res_pub)
+        vec_force_pub = rospy.Publisher ("fuerza_obstaculos", visualization_msgs.msg.Marker)
+        self.markerVector(2,f_obs, np.zeros(2),"fuerza_obstaculos",vec_force_pub)
+        vec_goal_pub = rospy.Publisher ("fuerza_goal", visualization_msgs.msg.Marker)
+        self.markerVector(3,f_goal, np.zeros(2),"vector_goal",vec_goal_pub)
         # if self.goal[0] != x_grid and self.goal[1] != y_grid:
         self.move()
-
-        # self.orientation=self.redondea_orientacion() #Actualiza la orientacion
+        
         rospy.sleep(0.01)
-        # print self.orientation
 
 
 
+    """
+        Movemos al robot
+    """
     def move(self):
         cons_a=0.2
         cons_l = 0.2
         vel_msg = Twist()
         # Publish the velocity
-        self.vel_lineal *= cons_l
-        self.vel_angular *= cons_a
+        self.vel_lineal *= cons_l #Radianes
+        self.vel_angular *= cons_a #Radianes
 
         if self.vel_lineal > 1:
             self.vel_lineal =1
@@ -177,33 +180,19 @@ class navegacion:
         print "velocidad lineal real:\t", self.vel_lineal
         print "Velocidad angular real:\t", self.vel_angular, "\n\n"
 
-    # De un punto en el grid lo convierte a las medidas fisicas originales
-
+    """
+     De un punto en el grid lo convierte a las medidas fisicas originales
+    """
     def to_real(self, pto):
         p = np.array([pto]);
-        p = p*0.333       # np.true_divide(p,0.3)
+        p = p*0.333
         return p
 
-
     """
-    Definimos el giro del robot, ya sea en sentido horario(-) o antiHorario(+)
-    return giro del robot en grados
+        Realiza el producto punto
     """
-    def giro_robot(self, giro):
-        pos_actual = self.toDegreesPos(self.yaw)
-        if pos_actual >giro:
-            # antiHorario
-            anti_horario=(360-pos_actual)+giro
-            sentido_horario=pos_actual-giro
-            if anti_horario < sentido_horario:
-                return anti_horario
-            else:
-                return -sentido_horario
-        else:
-            return giro -pos_actual
-
     def producto_punto(self, f, k):
-        #Obtenemos producto punto
+       
         res=f[0][0]*k[0] + f[0][1]*k[1]
         return res
 
@@ -217,6 +206,7 @@ class navegacion:
 
 
     """
+    Obtenemos la orientacion del robot con un vector unitario respecto a la lectura del odometro. 
     return coordenadas(x,y)
     """
     def orientacion_kobuki(self):
@@ -238,15 +228,6 @@ class navegacion:
         f=cons * self.fuerza_atraccion(self.to_real(punto_r),self.to_real(pto_goal),d)
         return f
 
-    def magnitud(self,vec_resultante):
-        # print "def magnitud()"
-        a=vec_resultante**2
-        # print "\t", a
-        a=a[0][0] + a[0][1]
-        # print "\t", a
-        #a=abs(a)
-        return math.sqrt(a)
-
     """
     calcularmos Distancia
     """
@@ -256,61 +237,41 @@ class navegacion:
         n=((punto_i[0][0]-self.x)**2)+((punto_i[0][1]-self.y)**2)
         return math.sqrt(n)
 
-    #def magnitud(self,distancia):
-    #    return float(1/distancia)
-
     """
-    Calcula fuerza repulsiva, al final lo convierte en positivo ya que
-    la repele
+    Calcula fuerza repulsiva
     """
     def fuerza_repulsiva(self,punto_r,punto_i,distancia):
         a=np.array([[self.x,self.y]])- punto_i
 
-        f=np.true_divide(a, distancia**3)       #distancia**3
-        #f=np.absolute(f)
-        return f#.tolist()
+        f=np.true_divide(a, distancia**3)      
+        
+        return f
 
     """
-    Calcula fuerza repulsiva, al final lo convierte en negativo
-    ya que se atraen
+    Calcula fuerza de atraccion
     """
     def fuerza_atraccion(self,punto_r,punto_goal,distancia):
         cons=1
-        #a=punto_goal-punto_r
+        
         a=self.goal-np.array([[self.x,self.y]])
         f=a * cons
-        #f=np.true_divide(a, distancia)
-        #if f[0][0] > 0:
-        #    f[0][0] = -f[0][0]
-        #elif f[0][1] > 0:
-        #    f[0][1] = -f[0][1]
-
-        return f#.tolist()
+        
+        return f
 
 
 
-    def tangente(self,vec_resultante):#Nos dara el angulo para la direccion
-        return vec_resultante[0][1]/vec_resultante[0][0]
 
-    def direccion_vector(self,vec_resultante):
-        d=vec_resultante[0][1]/vec_resultante[0][0]
-        dir=np.arctan(d) #En radianes
-        dir=self.toDegreesPos(dir)
-        #print "Direccion, en grados: \t",dir
-        return dir
+
 
     """
     Buscamos colisiones
+    
+    Colisiones en Todos los puntos cardinales(sensores), respecto al mapa
+    return vector con la fuerza repulsiva
     """
-    # Colisiones en Todos los puntos cardinales(sensores), respecto al mapa
-    # return vector con la fuerza repulsiva
     def fuerzas_repTotal(self,punto_r):
         cons=1.3
-        # punto_r_ar= np.array([punto_r])
-        # print "colision_N",punto_i
-        # print "Distancia_N",d
-        # print "fuerza_repulsiva", f
-
+       
         res=np.array([[0.0,0.0]])
         punto_i=self.colision_N(punto_r)
         d = self.distancia(punto_r, self.to_real(punto_i))
@@ -354,10 +315,14 @@ class navegacion:
 
         return res
 
+    """
+        REVISAMOS COLISIONES HACIA LOS OCHO LADOS QUE NOS PERMITE LA NATURALEZA DEL GRID.
+        punto_r : Las coordenadas actuales de la kobuki. 
 
+    """
     def colision_N(self,punto_r):#(x,y)
         x=punto_r[0]
-        y_temp=punto_r[1]+1
+        y_temp=punto_r[1]
         while x < self.width and y_temp < self.height:
             if self.mapa[y_temp][x] == 100:
                 return ([x,y_temp-1])
@@ -366,16 +331,16 @@ class navegacion:
 
     def colision_S(self,punto_r):
         x=punto_r[0]
-        y_temp=punto_r[1]-1
+        y_temp=punto_r[1]
 
         while x < self.width and y_temp >=0:
             if self.mapa[y_temp][x]==100:
                 return [x,y_temp+1]
             y_temp-=1
-        return [x,1]
+        return [x,0]
 
     def colision_E(self,punto_r):#(x,y)
-        x_temp=punto_r[0]+1
+        x_temp=punto_r[0]
         y=punto_r[1]
         while x_temp < self.width and y < self.height:
             if self.mapa[y][x_temp] == 100:
@@ -384,7 +349,7 @@ class navegacion:
         return [self.width-1,y]
 
     def colision_O(self,punto_r):
-        x_temp=punto_r[0]-1
+        x_temp=punto_r[0]
         y=punto_r[1]
         while x_temp > 0 and y < self.height:
             if self.mapa[y][x_temp] == 100:
@@ -433,56 +398,15 @@ class navegacion:
         return [0,self.height-1]
 
 
-    """
-    Convertimos radianes en grados positivos.
-    El valor se nos da en radianes (de 0-3.14 y de -3.14 -0) i.e de (-pi, pi)
-    el valor dado se pasa a grados y en caso de de que sea negativos se convierten
-    a grados positivos
-    """
-    def toDegreesPos(self,yaw):
-        grados=np.degrees(yaw)
-        if grados < 0:
-            grados=grados +360
-        return grados
-
-
-            #Si devuelve None es necesario rotar hacia cualquier lado un poco para que encuentre la coordenadas
-#            rospy.sleep(0.05)
-            #cons-=0.2
-
-
-
-    """
-    Relacion entre el odometro y la orientacion respecto al mapa fisico antes de empezar
-    cualquier movimiento (No logra funcionar, aun)
-    """
-    def first_pos(self):
-        if not self.once:
-            self.once=True
-            rospy.Subscriber("/odom",Odometry,self.pos)
-        else:
-            pass
-
-    def pos(self,msg):
-        orientation_q= msg.pose.pose.orientation
-        orientation_list=[orientation_q.x,orientation_q.y,orientation_q.z,orientation_q.w]
-        (roll,pitch,first_yaw)=euler_from_quaternion(orientation_list)
-        self.set_firstPos(first_yaw)
-
-    def set_firstPos(self,yaw):
-        self.yaw_inicial=yaw
-        print self.yaw_inicial
 
 def main():
     x=8
     y=1
-    orientacion_inicial="O"
     width=24
     height=30
-    yaw_inicial=-1.5310
-    coordenadas=[["N",1.5179],["O",3.0931],["S",-1.5839],["E",0.0220]]
+    
     rospy.init_node("navegacion_node",anonymous=True)
-    nav=navegacion(x,y,width,height,coordenadas,orientacion_inicial)
+    nav=navegacion(x,y,width,height)
 
 
     #nav.show()
