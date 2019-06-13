@@ -16,7 +16,7 @@ import math
 
 class navegacion:
     """
-        Constructor
+        Constructor, donde creamos nuestros publicadores y suscriptores
     """    
     def __init__(self,start_x,start_y,width,height):
         rospy.Subscriber("/odom",Odometry,self.get_odom)
@@ -37,7 +37,8 @@ class navegacion:
         
 
     """
-        descompone los valores del topico poseStamped y los asignamos a una variable global. 
+        descompone los valores del topico poseStamped y los asignamos a una variable global.
+        Se cambia la lectura de la orientacion de la kobuki a quaterniones 
     """
     def get_odom(self,msg):
         self.pose=msg
@@ -257,11 +258,6 @@ class navegacion:
         f=a * cons
         
         return f
-
-
-
-
-
 
     """
     Buscamos colisiones
