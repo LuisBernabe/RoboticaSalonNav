@@ -14,6 +14,7 @@ Donde se encuentra la carpeta _devel_ y _src_ se ejecutan los siguientes comando
 $ catkin make
 $ source devel/setup.bash
 ```
+__Nota:__ En cada terminal que se abra se tiene que realizar el procedimiento anterior. 
 
 Consiste en tres etapas: 
 
@@ -29,8 +30,19 @@ Ejecutamos el script _salon.launch_ el cual primero levantara el roscore para de
 todos los nodos que simulan las sillas, mesas y paredes definidas en el script. 
 ```
 $ roslaunch mesa_marker salon.launch
-
 ```
 
 ### 2. Publicador del Occupancy Grid
+
+El archivo _src/piso_salon/lugares_ocupados.csv_ contiene la informacion de la probabilidad de ocupacion del grid en cada coordenada. 
+
+En otra terminal ejecutamos el script para crear el publicador que mandara la informacion en rviz.
+
+```
+$ rosrun piso_salon piso.py 
+```
+
+ 
+
+
 
