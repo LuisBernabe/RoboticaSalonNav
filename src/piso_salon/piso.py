@@ -2,6 +2,7 @@
 
 """
 Clase que crea un publicador occupancy grid para mostrar que lugares en el salon estan ocupados
+author: Berna
 """
 
 from nav_msgs.msg import OccupancyGrid
@@ -17,16 +18,14 @@ class Piso:
 
         width=24    #X
         height=30 #Y
-        origen_x=-(width*0.3 )#/2)
-        origen_y=-(height*0.3)# /2)
+        origen_x=-(width*0.3 )
+        origen_y=-(height*0.3)
         origen=Pose()
         map_msg=OccupancyGrid()
         map_msg.header.frame_id="odom"
         map_msg.info.width=width
         map_msg.info.height=height
         map_msg.info.resolution=0.30 #30 cm por celda
-        #origen.position.x=origen_x
-        #origen.position.y=origen_y
         map_msg.info.origin=origen
 
         self.grid_numpy=np.zeros((height,width),dtype=int)

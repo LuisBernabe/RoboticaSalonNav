@@ -2,7 +2,11 @@ import os
 import pprint
 import csv
 """
-    Clase que lee un archivo cvs y devuelve una lista de diccionarios 
+    Clase que lee un archivo cvs y devuelve una lista de diccionarios.
+
+    El archivo cvs esta contenido con 3 parametros (x,y,probaOcupado)
+    donde se da la probabilidad de que esté ocupado la cooordenada (x,y). 
+    la probabilidad: está en un rango  de [0-100] 
 """
 class ParserCsv:
     def parse_file(self,file_name_csv):
