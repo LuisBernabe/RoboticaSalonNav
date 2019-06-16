@@ -5,15 +5,15 @@ from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 
 """
-    Clase que crea un publicador Marker simulando una mesa
+    Clase que crea un publicador Marker simulando una pared
     author: Berna
 """
 
 class Pared(object):
      """
     Constructor que tiene parametros:
-        index: Funciona como identificador de la mesa
-        paredEnX: Si la mesa estara de manera horizontal o vertical respecto al plano
+        index: Funciona como identificador de la pared
+        paredEnX: Si la pared estara de manera horizontal o vertical respecto al plano
         x_val: coordenada x en el plano donde se encontrara
         y_val: coordenada y en el plano donde se encontrara 
         z_val: coordenada z en el plano donde se encontrara
