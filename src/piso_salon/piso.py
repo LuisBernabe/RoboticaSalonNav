@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
+"""
+Clase que crea un publicador occupancy grid para mostrar que lugares en el salon estan ocupados
+"""
 
-#Clase que utiliza occupancy grid para mostrar que lugares en el salon estan ocupados
-#width=ancho= 720 (24)
-#height=largo=900 (30 azulejos)
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Point
@@ -39,9 +39,7 @@ class Piso:
         grid=self.grid_numpy.tolist()
         #self.llena_ocupados()
         map_msg.data=sum(grid,[]) #El grid ya esta en ceros
-        #self.piso_publicador.publish(map_msg)
-
-        #print("Listo :D ")
+        
         while not rospy.is_shutdown():
             self.piso_publicador.publish(map_msg)
             print("Listo :D ")

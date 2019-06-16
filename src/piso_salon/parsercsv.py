@@ -1,9 +1,11 @@
 import os
 import pprint
 import csv
-
+"""
+    Clase que lee un archivo cvs y devuelve una lista de diccionarios 
+"""
 class ParserCsv:
-    def parse_file(file_name_csv):
+    def parse_file(self,file_name_csv):
         DATADIR = ""
         DATAFILE = file_name_csv
         datafile = os.path.join(DATADIR, DATAFILE)
@@ -14,13 +16,8 @@ class ParserCsv:
                 data.append(line)
 
         return data
-
-
-    def test():
-        DATADIR = ""
-        DATAFILE = "lugares_ocupados.csv"
-        datafile = os.path.join(DATADIR, DATAFILE)
-        d = parse_file(datafile)
-        print(d)
-
-#test()
+    
+if __name__ == "__main__":
+    parser= ParserCsv()
+    a=parser.parse_file("lugares_ocupados.csv")
+    print(a)
