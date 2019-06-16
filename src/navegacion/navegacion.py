@@ -12,11 +12,14 @@ from visualization_msgs.msg import Marker
 import numpy as np
 import math
 
-
+"""
+    Codigo de navegacion aplicando el principio de campos potenciales
+"""
 
 class navegacion:
     """
         Constructor, donde creamos nuestros publicadores y suscriptores
+
     """    
     def __init__(self,start_x,start_y,width,height):
         rospy.Subscriber("/odom",Odometry,self.get_odom)
@@ -50,14 +53,14 @@ class navegacion:
         (self.roll,self.pitch,self.yaw)=euler_from_quaternion(orientation_list)
 
     """
-        Definimos el valor del objetivo
+        Definimos el valor del objetivo dentro del grid
     """
     def _goal(self,msg):
         self.goal[0][0] = msg.pose.pose.position.x
         self.goal[0][1] = msg.pose.pose.position.y
     
     """
-    Guardamos el Mapa
+    Guardamos el Mapa en una matriz 
     """
     def grid(self,msg):
 
@@ -75,8 +78,8 @@ class navegacion:
         marker = Marker ()
         marker.header.frame_id = "/odom"
         marker.header.stamp = rospy.Time.now ()
-        marker.ns = name;
-        marker.id = id;
+        marker.ns = name
+        marker.id = id
         marker.type = visualization_msgs.msg.Marker.ARROW
         marker.action = visualization_msgs.msg.Marker.ADD
         marker.scale.x=0.1
@@ -100,7 +103,7 @@ class navegacion:
         pub.publish(marker)
         
     """
-        En este metodo nos encargamos de unir todos nuestros calculos
+        Nos encargamos de unir todos nuestros calculos
         respecto a los campos potenciales para que logre avanzar y no estrellarse
         con obstaculos
     """
@@ -185,7 +188,7 @@ class navegacion:
      De un punto en el grid lo convierte a las medidas fisicas originales
     """
     def to_real(self, pto):
-        p = np.array([pto]);
+        p = np.array([pto])
         p = p*0.333
         return p
 
@@ -217,7 +220,9 @@ class navegacion:
 
 
     """
-    Calculamos fuerzas para las coordenadas meta
+    Calculamos la fuerza  de atraccion entre la ubicacion en el punto del robot p_r 
+    y la ubicacion de la meta p_i
+    return la fuerza de atraccion entre p_r y p_i  
     """
 
     def fuerzas_repGoal(self,punto_r,pto_goal):
@@ -230,11 +235,13 @@ class navegacion:
         return f
 
     """
-    calcularmos Distancia
+    calculamos la distancia entre dos puntos 
+        punto_r posicion del robot
+        punto_i posicion del goal
+        
+    
     """
     def distancia(self,punto_r,punto_i):
-        # punto_r=self.to_real(punto_r)
-        #punto_i=self.to_real(punto_i)
         n=((punto_i[0][0]-self.x)**2)+((punto_i[0][1]-self.y)**2)
         return math.sqrt(n)
 
@@ -262,8 +269,12 @@ class navegacion:
     """
     Buscamos colisiones
     
-    Colisiones en Todos los puntos cardinales(sensores), respecto al mapa
-    return vector con la fuerza repulsiva
+    Colisiones en Todos los puntos cardinales(sensores), respecto al mapa.
+    Dada la colision en el punto p_i en cada direccion del robot que se encuentra en el punto p_r 
+    calculamos la distancia d entre p_r y p_i y despues calculamos la fuerza repulsiva f_i con p_r, p_i 
+    y distancia d.  
+
+    return vector con la suma de las i-esimas fuerzas repulsivas
     """
     def fuerzas_repTotal(self,punto_r):
         cons=1.3
