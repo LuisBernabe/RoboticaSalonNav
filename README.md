@@ -4,9 +4,10 @@
 _Luis Gerardo Bernabe Gomez_
 
 ## Instalacion:
-    Donde se encuentra la carpeta _devel_ y _src_ se ejecutan los siguientes comandos. 
-     
+Donde se encuentra la carpeta _devel_ y _src_ se ejecutan los siguientes comandos. 
+
 ```
+
 $ catkin make
 $ source devel/setup.bash
 ```
