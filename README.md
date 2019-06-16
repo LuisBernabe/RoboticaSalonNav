@@ -23,14 +23,14 @@ Consiste en tres etapas:
 
 __A continuación el procedimiento para ejecutar cada uno de ellos__ 
 
-## 1. Correr RosCore
+### 1. Correr RosCore
 
-Ejecutamos el script _salon.lauch_ el cual primero levantara el roscore para despues levantar 
+Ejecutamos el script _salon.launch_ el cual primero levantara el roscore para despues levantar 
 todos los nodos que simulan las sillas, mesas y paredes definidas en el script. 
 ```
 $ roslaunch mesa_marker salon.launch
 
 ```
 
-## 2. Publicador del Occupancy Grid
- 
+### 2. Publicador del Occupancy Grid
+
