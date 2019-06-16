@@ -6,6 +6,7 @@ _Luis Gerardo Bernabe Gomez_
 ## Requisitos:
 - Python
 - ROS
+- Kobuki. (más informacion [aqui](http://wiki.ros.org/kobuki/Tutorials/Simulated%20Kobuki%20navigation%20in%20perfect%20world)  )
 
 ## Instalacion:
 Donde se encuentra la carpeta _devel_ y _src_ se ejecutan los siguientes comandos. 
@@ -24,13 +25,15 @@ Consiste en tres etapas:
 
 __A continuación el procedimiento para ejecutar cada uno de ellos__ 
 
-### 1. Correr RosCore
+### 1. Correr RosCore y entorno grafico
 
 Ejecutamos el script _salon.launch_ el cual primero levantara el roscore para despues levantar 
 todos los nodos que simulan las sillas, mesas y paredes definidas en el script. 
 ```
 $ roslaunch mesa_marker salon.launch
 ```
+
+En otra terminal 
 
 ### 2. Publicador del Occupancy Grid
 
@@ -41,6 +44,15 @@ En otra terminal ejecutamos el script para crear el publicador que mandara la in
 ```
 $ rosrun piso_salon piso.py 
 ```
+
+### 3. Ejecutar el algoritmo de navegacion.
+
+Ejecutamos el algoritmo de navegacion. 
+
+```
+$ rosrun navegacion navegacion.py 
+```
+
 
  
 
