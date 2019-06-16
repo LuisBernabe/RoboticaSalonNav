@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 
+"""
+script que solo hace pruebas mostrando el valor de la orientacion del robot suscribiendose
+a el odometro.
+"""
 import rospy
 import numpy as np
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-
+"""
+metodo que conviete el mensaje del odometro y lo guarda en variables
+"""
 def odometryCb(msg):
     orientation_q= msg.pose.pose.orientation
     orientation_list=[orientation_q.x,orientation_q.y,orientation_q.z,orientation_q.w]

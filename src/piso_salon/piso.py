@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+
 #Clase que utiliza occupancy grid para mostrar que lugares en el salon estan ocupados
 #width=ancho= 720 (24)
 #height=largo=900 (30 azulejos)
@@ -45,6 +46,10 @@ class Piso:
             self.piso_publicador.publish(map_msg)
             print("Listo :D ")
 
+    """
+        Logra convertir los datos que se encuentran en el archivo cvs e ingresar su valor en 
+        el occupancy grid. 
+    """
     def llena_ocupados(self): ## TODO
         parser=parser_csv.ParserCsv()
         #path="home/berna"
