@@ -33,7 +33,19 @@ todos los nodos que simulan las sillas, mesas y paredes definidas en el script.
 $ roslaunch mesa_marker salon.launch
 ```
 
-En otra terminal 
+En otra terminal nos dirigimos a la carpeta donde se encuentra la Kobuki y levantamos _rviz_: la interfaz grafica que nos permitira ver todos los componentes, el robot y el funcionamiento del algoritmo.
+```
+../kobuki$ rosrun rviz rviz 
+```
+
+despues levantamos el publicador para que aparezca la kobuki en rviz
+
+```
+../kobuki$ roslaunch kobuki_softnode full.launch 
+```
+
+__Nota:__ en rviz hay que crear cada item Marker y configurarlo para que escuche los mensajes de los publicadores que son las mesas, sillas y paredes, ademas crear los items _OccupancyGrid__ y el item _robot_ configurado para que escuche a la kobuki. 
+
 
 ### 2. Publicador del Occupancy Grid
 
