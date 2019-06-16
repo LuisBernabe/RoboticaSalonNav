@@ -4,9 +4,23 @@ import rospy
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 
-
+"""
+    Clase que crea un publicador Marker simulando una mesa
+    author: Berna
+"""
 
 class Pared(object):
+     """
+    Constructor que tiene parametros:
+        index: Funciona como identificador de la mesa
+        paredEnX: Si la mesa estara de manera horizontal o vertical respecto al plano
+        x_val: coordenada x en el plano donde se encontrara
+        y_val: coordenada y en el plano donde se encontrara 
+        z_val: coordenada z en el plano donde se encontrara
+
+
+    Los argumentos los toma del archivo launch
+    """
     def __init__(self,index,paredEnX,largo,x_val,y_val,z_val):
         self.marker_publicador=rospy.Publisher("/marker_Pared_"+str(index),Marker,queue_size=1)
         self.rate=rospy.Rate(1)

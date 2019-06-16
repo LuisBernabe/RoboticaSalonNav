@@ -1,3 +1,11 @@
+<!--- 
+  Archivo que crea todo el entorno "Fisico " del salon para poder llevar a cabo
+  la navegación. 
+  Author: Berna
+
+  Crea los nodos en ROS con los argumentos necesarios para que 
+  tenga, escencialemente, su posicion en X,Y,Z
+-->
 <launch>
   <!--- pared -->
     <!--- *********************************************** -->
