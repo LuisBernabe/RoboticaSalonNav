@@ -32,7 +32,7 @@ class navegacion:
         self.x=start_x
         self.y=start_y
         self.punto_r=[self.x,self.y]
-        self.goal=np.array([[4.0, 2.97]])
+        self.goal=np.array([[4.0, 2.97]]) # La posicion a donde debe llegar, se tiene que ajustar.
         self.width=width #X
         self.height=height #Y
         self.vel_lineal=0

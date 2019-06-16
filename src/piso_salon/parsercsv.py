@@ -7,6 +7,9 @@ import csv
     El archivo cvs esta contenido con 3 parametros (x,y,probaOcupado)
     donde se da la probabilidad de que esté ocupado la cooordenada (x,y). 
     la probabilidad: está en un rango  de [0-100] 
+
+    Para metodos graficos la primera coordenada esta definida la coordenada a donde 
+    se tiene que llegar el robot. 
 """
 class ParserCsv:
     def parse_file(self,file_name_csv):
